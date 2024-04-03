@@ -601,7 +601,7 @@ class DataLoader:
 
         return overlap
 
-    def phase_synchrony_metrics(self,k=2):
+    def phase_synchrony_metrics(self,k=2,save=True):
         """
         For each subject, compute the Kuramoto order 
         parameter for each community at each time t.
@@ -621,6 +621,10 @@ class DataLoader:
         -------
         k : int.
             Select the K partition of interest.
+
+        save : bool. Default = True.
+            Whether to save the results in
+            .csv files in 'dynamics_metrics/'.
 
         Returns:
         --------
@@ -648,6 +652,7 @@ class DataLoader:
 
         kura_lst = []
 
+        print('-Computing the Kuramoto order parameter.')
         for sub_id in subject_ids: #for each subject
             #get current subject signals
             tseries = time_series[sub_id]
@@ -676,6 +681,7 @@ class DataLoader:
 
         # Compute synchronization of each
         # community as their time-average
+        print('\n-Computing synchronization')
         synchronization = kuramoto.groupby(['subject_id','condition']).mean().reset_index()
 
         # Compute global synchronization
@@ -688,6 +694,7 @@ class DataLoader:
 
         # Compute metastability of each community
         # as their std across time.
+        print('-Computing metastability.')
         metastability = kuramoto.groupby(['subject_id','condition']).std().reset_index()
 
         # Compute global metastability
@@ -697,6 +704,16 @@ class DataLoader:
             global_meta.append(np.mean(metastability.iloc[i,2:].values))
 
         metastability['global'] = global_meta
+
+        if save:
+            try:
+                res_pth = f'{self._results_path_}/dynamics_metrics/k_{k}'
+                print(f'Saving results to {res_pth}')
+                kuramoto.to_csv(f'{res_pth}/kuramoto.csv',index=False)
+                synchronization.to_csv(f'{res_pth}/synchronization.csv',index=False)
+                metastability.to_csv(f'{res_pth}/metastability.csv',index=False)
+            except:
+                print(f'An error occured when saving the results to {res_pth}')
 
         return kuramoto,synchronization,metastability
 
